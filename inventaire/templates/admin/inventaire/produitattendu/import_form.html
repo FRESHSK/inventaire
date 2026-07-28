@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<p>Sélectionne la mission et le fichier Excel envoyé par le client. Le fichier
+doit avoir une ligne d'en-tête avec les colonnes <code>sku</code> et
+<code>quantite_prevue</code>. Pas de colonne zone : c'est une donnée client,
+le zoning est fait par l'agence pour le comptage, séparément.</p>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div>
+    {{ form.as_p }}
+  </div>
+  <input type="submit" value="Importer" class="default">
+</form>
+{% endblock %}

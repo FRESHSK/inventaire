@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<p>La première colonne indiquée ci-dessous est obligatoire (elle sert aussi
+de clé : une ligne dont la valeur existe déjà met à jour l'enregistrement
+plutôt que d'en créer un nouveau). Les colonnes suivantes sont facultatives.</p>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div>
+    {{ form.as_p }}
+  </div>
+  <input type="submit" value="Importer" class="default">
+</form>
+{% endblock %}
