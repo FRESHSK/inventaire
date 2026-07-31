@@ -159,6 +159,16 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# La page Mission dans l'admin affiche les inlines Affectation, Zone et
+# ProduitAttendu -- avec les imports en masse (ex: toute une plage de codes
+# de zones séquentiels), le nombre total de champs du formulaire dépasse
+# vite la limite par défaut de Django (1000), ce qui provoque une erreur
+# "Bad Request (400)" / TooManyFieldsSent au moment d'enregistrer, sans
+# détail visible en production (DEBUG=False). Relevé ici largement pour ne
+# plus jamais être bloqué par ça sur ces pages.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
+
+
 # Logging
 # Par défaut, Django n'affiche les erreurs 500 nulle part de visible en
 # production (DEBUG=False) sans ceci -- juste "mail_admins", qui ne fait
