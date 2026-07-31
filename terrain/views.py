@@ -32,33 +32,66 @@ def _est_ajax(request):
 
 
 def config(request):
-    """Écran de démarrage : choix de l'affectation (agent + matériel) pour
-    la mission active. Pas de champ zone -- voir scan().
-    """
-    if request.method == "POST":
-        affectation_id = request.POST.get("affectation")
+    """Écran de démarrage : l'agent choisit lui-même son Agent + son
+    Matériel (pas de liste d'Affectations pré-créées par le responsable --
+    voir discussion). Un enregistrement Affectation est créé ou mis à jour
+    en base pour garder une trace de qui a quel scanner, comme avant.
 
-        if not affectation_id:
-            messages.error(request, "Choisis une affectation avant de continuer.")
+    Si le Matériel choisi est déjà affecté à un autre agent pour la mission
+    active, on ne réaffecte jamais silencieusement : on redemande
+    confirmation (champ caché `confirme`) avant d'écraser l'ancienne
+    affectation.
+    """
+    mission = Mission.objects.filter(statut=Mission.Statut.ACTIVE).first()
+    agents = Agent.objects.order_by("nom")
+    materiels = Materiel.objects.exclude(etat=Materiel.Etat.MAINTENANCE).order_by("numero_serie")
+    confirmation = None
+
+    if request.method == "POST" and mission:
+        agent_id = request.POST.get("agent")
+        materiel_id = request.POST.get("materiel")
+        confirme = request.POST.get("confirme") == "1"
+
+        if not agent_id or not materiel_id:
+            messages.error(request, "Choisis un agent et un matériel avant de continuer.")
         else:
             try:
-                affectation = Affectation.objects.select_related("agent", "materiel").get(pk=affectation_id)
-            except Affectation.DoesNotExist:
-                messages.error(request, "Affectation introuvable.")
+                agent = Agent.objects.get(pk=agent_id)
+                materiel = Materiel.objects.get(pk=materiel_id)
+            except (Agent.DoesNotExist, Materiel.DoesNotExist):
+                messages.error(request, "Agent ou matériel introuvable.")
             else:
-                request.session["terrain_agent_id"] = affectation.agent_id
-                request.session["terrain_materiel_id"] = affectation.materiel_id
-                request.session["terrain_zone_id"] = None
-                request.session["terrain_scan_count"] = 0
-                return redirect("terrain:scan")
+                existante = Affectation.objects.filter(mission=mission, materiel=materiel).select_related("agent").first()
 
-    affectations = (
-        Affectation.objects.filter(mission__statut=Mission.Statut.ACTIVE)
-        .select_related("agent", "materiel", "mission")
-        .order_by("agent__nom")
+                if existante and existante.agent_id != agent.id and not confirme:
+                    confirmation = {
+                        "agent_id": agent.id,
+                        "materiel_id": materiel.id,
+                        "ancien_agent": existante.agent.nom,
+                        "nouvel_agent": agent.nom,
+                        "materiel": str(materiel),
+                    }
+                else:
+                    if existante and existante.agent_id != agent.id:
+                        existante.agent = agent
+                        existante.save(update_fields=["agent", "date_modification"])
+                        affectation = existante
+                    elif existante:
+                        affectation = existante
+                    else:
+                        affectation = Affectation.objects.create(mission=mission, agent=agent, materiel=materiel)
+
+                    request.session["terrain_agent_id"] = affectation.agent_id
+                    request.session["terrain_materiel_id"] = affectation.materiel_id
+                    request.session["terrain_zone_id"] = None
+                    request.session["terrain_scan_count"] = 0
+                    return redirect("terrain:scan")
+
+    return render(
+        request,
+        "terrain/config.html",
+        {"mission": mission, "agents": agents, "materiels": materiels, "confirmation": confirmation},
     )
-
-    return render(request, "terrain/config.html", {"affectations": affectations})
 
 
 def scan(request):

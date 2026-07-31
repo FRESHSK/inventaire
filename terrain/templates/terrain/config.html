@@ -1,15 +1,38 @@
 {% extends "terrain/base.html" %}
 {% block content %}
-<form method="post" style="display:flex;flex-direction:column;gap:16px;flex:1;">
-  {% csrf_token %}
+{% if confirmation %}
+  <div class="message error" style="margin-bottom:16px;">
+    Le matériel {{ confirmation.materiel }} est déjà affecté à {{ confirmation.ancien_agent }} pour cette mission.
+  </div>
+  <form method="post" style="display:flex;flex-direction:column;gap:16px;flex:1;">
+    {% csrf_token %}
+    <input type="hidden" name="agent" value="{{ confirmation.agent_id }}">
+    <input type="hidden" name="materiel" value="{{ confirmation.materiel_id }}">
+    <input type="hidden" name="confirme" value="1">
+    <p style="font-size:15px;color:#374151;">Réaffecter ce matériel à {{ confirmation.nouvel_agent }} ?</p>
+    <button type="submit" class="bouton-principal">Confirmer la réaffectation</button>
+    <a href="{% url 'terrain:config' %}" class="bouton-secondaire" style="text-align:center;line-height:44px;text-decoration:none;display:block;">Choisir un autre matériel</a>
+  </form>
+{% elif mission %}
+  <form method="post" style="display:flex;flex-direction:column;gap:16px;flex:1;">
+    {% csrf_token %}
 
-  {% if affectations %}
     <div class="champ">
-      <label for="affectation">Affectation</label>
-      <select name="affectation" id="affectation" required>
-        <option value="" disabled selected>Choisis une affectation</option>
-        {% for affectation in affectations %}
-          <option value="{{ affectation.id }}">{{ affectation.agent.nom }} — {{ affectation.materiel }}</option>
+      <label for="agent">Agent</label>
+      <select name="agent" id="agent" required>
+        <option value="" disabled selected>Choisis un agent</option>
+        {% for agent in agents %}
+          <option value="{{ agent.id }}">{{ agent.nom }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="champ">
+      <label for="materiel">Matériel</label>
+      <select name="materiel" id="materiel" required>
+        <option value="" disabled selected>Choisis un matériel</option>
+        {% for materiel in materiels %}
+          <option value="{{ materiel.id }}">{{ materiel }}</option>
         {% endfor %}
       </select>
     </div>
@@ -17,11 +40,11 @@
     <div style="flex:1;"></div>
 
     <button type="submit" class="bouton-principal">Commencer le scan</button>
-  {% else %}
-    <p style="color:#6B7280;font-size:14px;">
-      Aucune affectation trouvée pour une mission active. Demande au responsable
-      de créer ton affectation (agent + matériel) dans l'admin.
-    </p>
-  {% endif %}
-</form>
+  </form>
+{% else %}
+  <p style="color:#6B7280;font-size:14px;">
+    Aucune mission active pour le moment. Demande au responsable d'activer
+    une mission dans l'admin.
+  </p>
+{% endif %}
 {% endblock %}
