@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'inventaire',
+    'terrain',
 ]
 
 MIDDLEWARE = [
@@ -156,3 +157,32 @@ STORAGES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Logging
+# Par défaut, Django n'affiche les erreurs 500 nulle part de visible en
+# production (DEBUG=False) sans ceci -- juste "mail_admins", qui ne fait
+# rien tant qu'aucun ADMINS/serveur mail n'est configuré. Cette config
+# envoie les erreurs sur la console, donc elles apparaissent dans les logs
+# Railway (onglet Deployments -> View Logs) sans avoir besoin d'activer
+# DEBUG=True pour les voir.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}

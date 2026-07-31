@@ -1,0 +1,30 @@
+{% extends "terrain/base.html" %}
+{% block content %}
+<form method="post" style="display:flex;flex-direction:column;gap:16px;flex:1;">
+  {% csrf_token %}
+
+  <div class="champ">
+    <label for="zone">Zone</label>
+    <select name="zone" id="zone" required>
+      <option value="" disabled selected>Choisis une zone</option>
+      {% for zone in zones %}
+        <option value="{{ zone.id }}">{{ zone.code_barres }} — {{ zone.mission }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="champ">
+    <label for="agent">Agent</label>
+    <select name="agent" id="agent" required>
+      <option value="" disabled selected>Choisis un agent</option>
+      {% for agent in agents %}
+        <option value="{{ agent.id }}">{{ agent.nom }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div style="flex:1;"></div>
+
+  <button type="submit" class="bouton-principal">Commencer le scan</button>
+</form>
+{% endblock %}

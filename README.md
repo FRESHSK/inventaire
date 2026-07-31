@@ -84,12 +84,33 @@ valeurs)`. `ProduitAttendu` garde sa propre implémentation historique
 elle pourrait être migrée vers le mixin plus tard si besoin, mais n'a pas
 été retouchée pour ne pas re-tester ce qui marchait déjà.
 
+## App `terrain` : interface de scan pour MC21/MC62 (navigateur, mode kiosk)
+
+En plus de l'admin, l'app `terrain` fournit une interface dédiée au scan,
+pensée pour un terminal MC21/MC62 en mode "keyboard emulator" (le scanner
+tape le code-barres comme un clavier) dans un navigateur en kiosk (ex.
+Fully Kiosk Browser) :
+
+- `/terrain/` : écran de démarrage, choix de la Zone (scan strict
+  uniquement pour l'instant) et de l'Agent.
+- `/terrain/scan/?zone=<id>&agent=<id>` : boucle de scan, un seul champ SKU
+  toujours en focus, qui crée un `MouvementStock` à chaque scan et revient
+  sur le même écran pour enchaîner sans repasser par les menus.
+
+Volontairement limité au scan strict pour l'instant (les zones utilisant
+une autre méthode n'apparaissent pas dans le sélecteur, et l'accès direct
+par URL est bloqué). `terrain` ne contient aucune règle métier : les vues
+appellent simplement `inventaire.models.MouvementStock`, qui reste la seule
+source de vérité pour la validation.
+
 ## Ce qui n'est PAS encore fait (volontairement, phase 2+)
 
+- Interfaces scan+multiplicateur et saisie manuelle dans `terrain` (pour
+  l'instant seul le scan strict est géré).
 - API REST (Django REST Framework) pour que l'app Android du MC62 puisse
   envoyer des scans.
 - Dashboard HTMX + SSE (synchronisation live).
-- Application Android sur le MC62 (3 interfaces selon la méthode de zone).
+- Application Android native sur le MC62.
 - Mise en cache locale hors-ligne sur le MC62.
 - Rapport de restitution client.
 

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Inventaire terrain</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: #F1F0EC;
+    color: #1F2937;
+    min-height: 100vh;
+  }
+  .ecran {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 100vh;
+  }
+  label {
+    font-size: 14px;
+    color: #4B5563;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  select, input[type=text] {
+    width: 100%;
+    height: 52px;
+    font-size: 18px;
+    padding: 0 14px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    background: #fff;
+  }
+  select:focus, input[type=text]:focus {
+    outline: none;
+    border-color: #1E293B;
+    box-shadow: 0 0 0 3px rgba(30,41,59,0.15);
+  }
+  button {
+    height: 52px;
+    font-size: 17px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+  .bouton-principal {
+    background: #1E293B;
+    color: #fff;
+  }
+  .bouton-secondaire {
+    background: transparent;
+    color: #4B5563;
+    border: 1px solid #CBD5E1;
+    height: 44px;
+    font-size: 14px;
+  }
+  .champ { display: flex; flex-direction: column; gap: 6px; }
+  .message {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .message.success { background: #EAF3DE; color: #27500A; }
+  .message.error { background: #FCEBEB; color: #791F1F; }
+</style>
+</head>
+<body>
+<div class="ecran">
+{% for message in messages %}
+  <div class="message {% if message.tags == 'error' %}error{% else %}success{% endif %}">{{ message }}</div>
+{% endfor %}
+{% block content %}{% endblock %}
+</div>
+</body>
+</html>
