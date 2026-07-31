@@ -1,26 +1,28 @@
 {% extends "terrain/base.html" %}
 {% block content %}
 <div style="display:flex;align-items:center;justify-content:space-between;">
-  <div style="font-size:14px;color:#4B5563;">
-    {{ zone.code_barres }} &middot; {{ agent.nom }}
+  <div style="font-size:14px;color:#4B5563;" id="contexte">
+    {% if zone %}{{ zone.code_barres }} &middot; {% else %}Zone en attente &middot; {% endif %}{{ agent.nom }}
   </div>
   <a href="{% url 'terrain:config' %}" class="bouton-secondaire" style="text-decoration:none;line-height:44px;padding:0 14px;display:inline-block;">Changer</a>
 </div>
 
 <div style="text-align:center;padding:12px 0;">
-  <div style="font-size:40px;font-weight:600;">{{ scan_count }}</div>
+  <div id="compteur" style="font-size:40px;font-weight:600;">{{ scan_count }}</div>
   <div style="font-size:13px;color:#6B7280;">scans cette session</div>
 </div>
 
-<form method="post" id="scan-form" action="{% url 'terrain:scan' %}?zone={{ zone.id }}&agent={{ agent.id }}">
+<div id="messages-ajax"></div>
+
+<form method="post" id="scan-form" action="{% url 'terrain:scan' %}">
   {% csrf_token %}
   <input
     type="text"
-    name="sku"
-    id="sku"
+    name="code"
+    id="code"
     autocomplete="off"
     autofocus
-    placeholder="En attente du scan"
+    placeholder="{% if zone %}Scanne un article{% else %}Scanne d'abord la zone{% endif %}"
     style="text-align:center;font-size:22px;height:76px;"
   >
 </form>
@@ -30,12 +32,77 @@
 <a href="{% url 'terrain:config' %}" class="bouton-secondaire" style="text-align:center;line-height:44px;text-decoration:none;display:block;">Terminer la session</a>
 
 <script>
-  var champ = document.getElementById("sku");
+  var champ = document.getElementById("code");
+  var form = document.getElementById("scan-form");
+  var compteurEl = document.getElementById("compteur");
+  var contexteEl = document.getElementById("contexte");
+  var messagesEl = document.getElementById("messages-ajax");
+  var agentNom = "{{ agent.nom|escapejs }}";
+  var minuteur = null;
+
   function refocus() { champ.focus(); }
   refocus();
   setInterval(refocus, 1500);
-  document.getElementById("scan-form").addEventListener("submit", function () {
-    setTimeout(refocus, 100);
+
+  function afficherMessage(texte, type) {
+    messagesEl.innerHTML = "";
+    var div = document.createElement("div");
+    div.className = "message " + type;
+    div.textContent = texte;
+    messagesEl.appendChild(div);
+  }
+
+  // Codes possibles envoyés par la douchette :
+  // - le code-barres d'une zone -> bascule le contexte (zone_switch: true),
+  //   ne compte pas comme un scan d'article ;
+  // - n'importe quel autre code -> enregistré comme article dans la zone
+  //   active (connu ou pas -- pas de vérification contre le stock théorique
+  //   ici, comme dans le PV).
+  function envoyerCode(code) {
+    var data = new FormData();
+    data.append("csrfmiddlewaretoken", form.querySelector("[name=csrfmiddlewaretoken]").value);
+    data.append("code", code);
+
+    fetch(form.action, {
+      method: "POST",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      body: data,
+    })
+      .then(function (reponse) { return reponse.json(); })
+      .then(function (json) {
+        if (json.success) {
+          compteurEl.textContent = json.count;
+          if (json.zone_switch) {
+            contexteEl.textContent = json.zone_code + " · " + agentNom;
+            champ.placeholder = "Scanne un article";
+            afficherMessage("Zone " + json.zone_code + " active", "success");
+          } else {
+            afficherMessage(json.sku, "success");
+          }
+        } else {
+          afficherMessage(json.erreur, "error");
+          champ.value = code;
+        }
+      })
+      .catch(function () {
+        afficherMessage("Connexion perdue, ce code n'a pas été enregistré : " + code, "error");
+        champ.value = code;
+      });
+  }
+
+  // La douchette du MC21 tape tous les caractères d'un coup, bien plus vite
+  // qu'une frappe humaine. On envoie 250ms après la fin de la frappe, et on
+  // vide/refocalise le champ tout de suite pour ne jamais bloquer le scan
+  // suivant en attendant la réponse du serveur.
+  champ.addEventListener("input", function () {
+    clearTimeout(minuteur);
+    minuteur = setTimeout(function () {
+      var valeur = champ.value.trim();
+      if (valeur.length > 0) {
+        champ.value = "";
+        envoyerCode(valeur);
+      }
+    }, 250);
   });
 </script>
 {% endblock %}

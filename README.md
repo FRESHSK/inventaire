@@ -91,17 +91,26 @@ pensée pour un terminal MC21/MC62 en mode "keyboard emulator" (le scanner
 tape le code-barres comme un clavier) dans un navigateur en kiosk (ex.
 Fully Kiosk Browser) :
 
-- `/terrain/` : écran de démarrage, choix de la Zone (scan strict
-  uniquement pour l'instant) et de l'Agent.
-- `/terrain/scan/?zone=<id>&agent=<id>` : boucle de scan, un seul champ SKU
-  toujours en focus, qui crée un `MouvementStock` à chaque scan et revient
-  sur le même écran pour enchaîner sans repasser par les menus.
+- `/terrain/` : écran de démarrage, choix de l'**Affectation** (agent +
+  matériel, pour la mission active) — pas de zone à ce stade.
+- `/terrain/scan/` : boucle de scan, un seul champ toujours en focus. Le
+  contexte (agent, matériel, zone active, compteur) est gardé en session,
+  donc plus rien dans l'URL. Démarre "en attente de zone" : le premier code
+  scanné qui correspond au code-barres d'une Zone (scan strict) active
+  cette zone ; tout scan suivant qui correspond de nouveau à une Zone
+  bascule dessus (option "scanner la zone pour changer de contexte" plutôt
+  qu'un sélecteur) ; tout scan qui ne correspond à aucune Zone est enregistré
+  comme article dans la zone active — connu ou pas, exactement comme dans le
+  PV : la réconciliation avec le stock théorique se fait plus tard, pas au
+  moment du scan. Un scan d'article avant toute zone active est refusé
+  ("Scanne d'abord le code de la zone.").
 
-Volontairement limité au scan strict pour l'instant (les zones utilisant
-une autre méthode n'apparaissent pas dans le sélecteur, et l'accès direct
-par URL est bloqué). `terrain` ne contient aucune règle métier : les vues
-appellent simplement `inventaire.models.MouvementStock`, qui reste la seule
-source de vérité pour la validation.
+Volontairement limité au scan strict pour l'instant (une zone scannée qui
+utilise une autre méthode est refusée avec un message explicite). `terrain`
+ne contient aucune règle métier : les vues appellent simplement
+`inventaire.models.MouvementStock`, qui reste la seule source de vérité
+pour la validation (y compris le verrouillage automatique de zone, qui se
+déclenche normalement au premier scan d'article dans la nouvelle zone).
 
 ## Ce qui n'est PAS encore fait (volontairement, phase 2+)
 
